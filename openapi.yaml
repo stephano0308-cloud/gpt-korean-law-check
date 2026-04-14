@@ -1,0 +1,290 @@
+openapi: 3.1.0
+info:
+  title: GPT Korean Law Check API
+  version: 1.0.0
+  description: 조세사건 관련법령 검토를 위한 GPT Action용 API
+servers:
+  - url: https://your-server-domain.com
+    description: Replace with your deployed server URL
+paths:
+  /health:
+    get:
+      operationId: health
+      summary: 서비스 상태 확인
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                  service:
+                    type: string
+                  law_api_key:
+                    type: string
+  /extract-hwpx-text:
+    post:
+      operationId: extractHwpxText
+      summary: HWPX 파일에서 텍스트를 추출한다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExtractHwpxRequest'
+      responses:
+        '200':
+          description: 추출 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExtractHwpxResponse'
+  /analyze-case-document:
+    post:
+      operationId: analyzeCaseDocument
+      summary: 사건 문서 텍스트에서 쟁점과 관련법령을 구조화한다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnalyzeCaseDocumentRequest'
+      responses:
+        '200':
+          description: 분석 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnalyzeCaseDocumentResponse'
+  /review-related-laws:
+    post:
+      operationId: reviewRelatedLaws
+      summary: 문서에 기재된 관련법령을 공식 법령 검색 결과와 대조하여 수정·추가 의견을 반환한다
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReviewRelatedLawsRequest'
+      responses:
+        '200':
+          description: 검토 결과
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReviewRelatedLawsResponse'
+components:
+  schemas:
+    ExtractHwpxRequest:
+      type: object
+      properties:
+        hwpx_base64:
+          type: string
+          description: base64 인코딩된 HWPX 파일 내용
+      required:
+        - hwpx_base64
+    ExtractHwpxResponse:
+      type: object
+      properties:
+        text:
+          type: string
+        length:
+          type: integer
+        scanned_files:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+    AnalyzeCaseDocumentRequest:
+      type: object
+      properties:
+        document_text:
+          type: string
+          description: 사건 문서 전체 텍스트
+      required:
+        - document_text
+    LawReference:
+      type: object
+      properties:
+        law_name:
+          type: string
+        article:
+          type:
+            - string
+            - 'null'
+        paragraph:
+          type:
+            - string
+            - 'null'
+        item:
+          type:
+            - string
+            - 'null'
+        display:
+          type: string
+    AnalyzeCaseDocumentResponse:
+      type: object
+      properties:
+        all_dates:
+          type: array
+          items:
+            type: string
+        date_contexts:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        issues:
+          type: array
+          items:
+            type: string
+        basis_dates_by_issue:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+        law_references:
+          type: array
+          items:
+            $ref: '#/components/schemas/LawReference'
+    ReviewRelatedLawsRequest:
+      type: object
+      properties:
+        document_text:
+          type: string
+          description: 사건 문서 전체 텍스트
+        include_law_text:
+          type: boolean
+          default: false
+          description: 조문 본문 포함 여부
+      required:
+        - document_text
+    HistoryAnalysis:
+      type: object
+      properties:
+        law_name:
+          type: string
+        basis_dates:
+          type: array
+          items:
+            type: string
+        history_status:
+          type: string
+        history_mode:
+          type:
+            - string
+            - 'null'
+        selected_law_id:
+          type:
+            - string
+            - 'null'
+        current_effective_date:
+          type:
+            - string
+            - 'null'
+        review_note:
+          type: string
+    AddendumAnalysis:
+      type: object
+      properties:
+        has_addendum:
+          type: boolean
+        effective_rules:
+          type: array
+          items:
+            type: string
+        application_rules:
+          type: array
+          items:
+            type: string
+        transition_rules:
+          type: array
+          items:
+            type: string
+        basis_dates_considered:
+          type: array
+          items:
+            type: string
+        review_opinion:
+          type: string
+    ReviewedLaw:
+      type: object
+      properties:
+        reference:
+          type: string
+        issue:
+          type: string
+        basis_dates:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+        reason:
+          type: string
+        law_id:
+          type:
+            - string
+            - 'null'
+        law_name_official:
+          type:
+            - string
+            - 'null'
+        effective_date:
+          type:
+            - string
+            - 'null'
+        article_title:
+          type:
+            - string
+            - 'null'
+        article_text:
+          type:
+            - string
+            - 'null'
+        addendum_analysis:
+          $ref: '#/components/schemas/AddendumAnalysis'
+        history_analysis:
+          $ref: '#/components/schemas/HistoryAnalysis'
+    AdditionalSuggestion:
+      type: object
+      properties:
+        issue:
+          type: string
+        basis_dates:
+          type: array
+          items:
+            type: string
+        suggestion:
+          type: string
+        reason:
+          type: string
+        history_analysis:
+          $ref: '#/components/schemas/HistoryAnalysis'
+    ReviewRelatedLawsResponse:
+      type: object
+      properties:
+        overview:
+          $ref: '#/components/schemas/AnalyzeCaseDocumentResponse'
+        reviewed_laws:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewedLaw'
+        additional_suggestions:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdditionalSuggestion'
+        draft_revision_points:
+          type: array
+          items:
+            type: string
+        limitations:
+          type: array
+          items:
+            type: string
